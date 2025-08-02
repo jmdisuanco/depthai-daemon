@@ -124,6 +124,7 @@ class DepthAIStats:
             self.frame_count += 1
             self.last_frame_time = current_time
     
+    # Corrected method: removed duplicate definition
     def update_imu_stats(self):
         """Update IMU statistics"""
         with self.lock:
@@ -133,11 +134,6 @@ class DepthAIStats:
         """Increment error counter"""
         with self.lock:
             self.error_count += 1
-    
-    def update_imu_stats(self):
-        """Update IMU statistics"""
-        with self.lock:
-            self.imu_data_count += 1
     
     def add_temperature_reading(self, temp_celsius):
         """Add temperature reading to history"""
@@ -319,11 +315,7 @@ class DepthAIDaemon:
                 "usb_speed": str(device.getUsbSpeed()) if hasattr(device, 'getUsbSpeed') else "unknown"
             }
             
-            # Try to detect IMU by checking device features
-            connected_cameras = device.getConnectedCameraFeatures()
-            
             # Check if IMU is available by trying to create an IMU node
-            # This is a safer way than checking device model
             try:
                 test_pipeline = dai.Pipeline()
                 imu_node = test_pipeline.create(dai.node.IMU)
@@ -334,6 +326,7 @@ class DepthAIDaemon:
                 features["imu"] = False
             
             # Check for IR cameras (for Pro models)
+            connected_cameras = device.getConnectedCameraFeatures()
             for cam_socket in connected_cameras:
                 if "LEFT" in str(cam_socket) or "RIGHT" in str(cam_socket):
                     features["depth"] = True
@@ -347,7 +340,9 @@ class DepthAIDaemon:
             
         except Exception as e:
             logging.warning(f"Error detecting device features: {e}")
-        
+            
+        return features
+    
     def _reload_config(self, signum, frame):
         """Reload configuration on SIGHUP"""
         logging.info("Reloading configuration...")
@@ -557,6 +552,10 @@ class DepthAIDaemon:
                 for file in files_to_remove:
                     file.unlink()
                     
+        except Exception as e:
+            logging.error(f"Error cleaning up files: {e}")
+    
+    # Corrected method: Added proper exception handling
     def _save_imu_data(self, imu_packet):
         """Save IMU data to file"""
         try:
@@ -595,20 +594,8 @@ class DepthAIDaemon:
                 json.dump(imu_data, f, indent=2)
                 
         except Exception as e:
-    def _cleanup_old_files(self, directory: str):
-        """Remove old files if we exceed max_files limit"""
-        try:
-            max_files = self.config.config["output"]["max_files"]
-            files = sorted(Path(directory).glob("*.jpg"), key=os.path.getctime)
-            
-            if len(files) > max_files:
-                files_to_remove = files[:-max_files]
-                for file in files_to_remove:
-                    file.unlink()
-                    
-        except Exception as e:
-            logging.error(f"Error cleaning up files: {e}")
-    
+            logging.error(f"Error saving IMU data: {e}")
+
     def run(self):
         """Main daemon loop"""
         logging.info("DepthAI Daemon starting...")
@@ -665,7 +652,7 @@ class DepthAIDaemon:
                     
             except Exception as e:
                 reconnect_attempts += 1
-                logging.error(f"Device error (attempt {reconnect_attempts}/{max_attempts}): {e}")
+                logging.error(f"Device error (attempt {reconnect_attempts}/{max_attempts}): {type(e).__name__} - {e}")
                 self.stats.increment_error()
                 
                 if reconnect_attempts < max_attempts and self.running:
@@ -682,9 +669,9 @@ def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="DepthAI Daemon Service")
     parser.add_argument("--config", "-c", default="/etc/depthai-daemon/config.json",
-                       help="Configuration file path")
+                        help="Configuration file path")
     parser.add_argument("--generate-config", action="store_true",
-                       help="Generate default configuration file and exit")
+                        help="Generate default configuration file and exit")
     
     args = parser.parse_args()
     
@@ -702,7 +689,7 @@ def main():
     except KeyboardInterrupt:
         logging.info("Received keyboard interrupt, shutting down...")
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
+        logging.error(f"Unexpected error: {type(e).__name__} - {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
