@@ -22,7 +22,7 @@ The library is built with a modular architecture that separates concerns:
 ```bash
 # Clone or download the library files
 git clone http://www.github.com/jmdisuanco/depthai-daemon
-cd depthai-client-library
+cd clients
 
 # Install dependencies
 bun install
