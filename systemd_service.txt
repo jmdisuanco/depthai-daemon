@@ -30,21 +30,24 @@ StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=depthai-daemon
 
-# Security and permissions
+# Security and permissions - RELAXED to fix NAMESPACE issues
 NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
+# Commented out problematic security restrictions
+# PrivateTmp=true
+# ProtectSystem=strict
+# ProtectHome=true
+
+# Required directories for the daemon
 ReadWritePaths=/var/log/depthai-daemon /var/run/depthai-daemon /tmp/depthai-frames /etc/depthai-daemon
 
-# USB and hardware access
+# USB and hardware access - essential for DepthAI devices
 SupplementaryGroups=plugdev video dialout
 
 # Resource limits
 MemoryLimit=2G
 CPUQuota=80%
 
-# Environment variables
+# Environment variables for DepthAI
 Environment=DEPTHAI_LEVEL=info
 Environment=OPENCV_LOG_LEVEL=ERROR
 

@@ -154,7 +154,7 @@ EOF
 }
 
 install_systemd_service() {
-    log_info "Installing systemd service..."
+    log_info "Installing systemd service with relaxed security settings..."
 
     cat > /etc/systemd/system/depthai-daemon.service << EOF
 [Unit]
@@ -168,22 +168,45 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
+
+# Virtual environment and executable
 Environment=PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/depthai_daemon.py --config $CONFIG_DIR/config.json
+
+# Restart configuration
 Restart=always
 RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Process management
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
+
+# Output and logging
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=depthai-daemon
-# Security sandboxing has been slightly relaxed to avoid NAMESPACE errors
+
+# Security and permissions - RELAXED to fix NAMESPACE issues
 NoNewPrivileges=true
-ProtectSystem=true
-ProtectHome=true
+# Commented out problematic security restrictions that cause NAMESPACE errors
+# PrivateTmp=true
+# ProtectSystem=strict
+# ProtectHome=true
+
+# Required directories for the daemon
 ReadWritePaths=$LOG_DIR $RUN_DIR /tmp/depthai-frames $CONFIG_DIR
+
+# USB and hardware access - essential for DepthAI devices
 SupplementaryGroups=plugdev video dialout
+
+# Resource limits
+MemoryLimit=2G
+CPUQuota=80%
+
+# Environment variables for DepthAI
 Environment=DEPTHAI_LEVEL=info
 Environment=OPENCV_LOG_LEVEL=ERROR
 
@@ -192,7 +215,7 @@ WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    log_success "Systemd service installed"
+    log_success "Systemd service installed with relaxed security settings"
 }
 
 enable_and_start_service() {
@@ -204,13 +227,18 @@ enable_and_start_service() {
         log_success "Service started successfully"
     else
         log_error "Failed to start service"
+        log_info "Checking service status..."
+        systemctl status depthai-daemon.service --no-pager -l
+        return 1
     fi
 
-    sleep 2
+    sleep 3
     if systemctl is-active --quiet depthai-daemon.service; then
         log_success "Service is running"
     else
         log_warning "Service may not be running properly. Check with: systemctl status depthai-daemon"
+        log_info "Recent logs:"
+        journalctl -u depthai-daemon.service --no-pager -n 20
     fi
 }
 
@@ -293,6 +321,25 @@ show_usage_info() {
     echo "  depthai-status         # Show status"
     echo "  depthai-logs           # Show logs"
     echo "  depthai-config edit    # Edit config"
+    echo
+    echo "=== Troubleshooting ==="
+    echo "If the service fails to start:"
+    echo "  1. Check logs: journalctl -u depthai-daemon.service -f"
+    echo "  2. Test manually: sudo -u pi /opt/depthai-daemon/venv/bin/python /opt/depthai-daemon/depthai_daemon.py --config /etc/depthai-daemon/config.json"
+    echo "  3. Check USB permissions: lsusb | grep -i luxonis"
+}
+
+fix_service() {
+    log_info "Fixing existing systemd service with relaxed security settings..."
+    
+    # Stop the service
+    systemctl stop depthai-daemon.service || true
+    
+    # Install the corrected service file
+    install_systemd_service
+    
+    # Try to start again
+    enable_and_start_service
 }
 
 uninstall_service() {
@@ -327,12 +374,19 @@ main() {
             create_logrotate_config
             show_usage_info
             ;;
+        fix)
+            check_root
+            fix_service
+            ;;
         uninstall)
             check_root
             uninstall_service
             ;;
         *)
-            echo "Usage: $0 {install|uninstall}"
+            echo "Usage: $0 {install|fix|uninstall}"
+            echo "  install   - Full installation"
+            echo "  fix       - Fix NAMESPACE issues with relaxed security"
+            echo "  uninstall - Remove installation"
             exit 1
             ;;
     esac
