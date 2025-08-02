@@ -20,6 +20,8 @@ CONFIG_DIR="/etc/depthai-daemon"
 LOG_DIR="/var/log/depthai-daemon"
 RUN_DIR="/var/run/depthai-daemon"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -46,30 +48,26 @@ check_root() {
 
 check_system() {
     log_info "Checking system requirements..."
-    
-    # Check if running on Raspberry Pi
+
     if ! grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
         log_warning "This script is designed for Raspberry Pi. Continuing anyway..."
     fi
-    
-    # Check Python version
+
     if ! python3 --version | grep -q "Python 3.[8-9]\|Python 3.1[0-9]"; then
         log_error "Python 3.8 or higher is required"
         exit 1
     fi
-    
-    # Check if systemctl is available
+
     if ! command -v systemctl &> /dev/null; then
         log_error "systemctl is required but not found"
         exit 1
     fi
-    
+
     log_success "System requirements check passed"
 }
 
 install_system_dependencies() {
     log_info "Installing system dependencies..."
-    
     apt-get update
     apt-get install -y \
         python3-full \
@@ -83,105 +81,77 @@ install_system_dependencies() {
         libopencv-dev \
         python3-opencv \
         udev
-    
     log_success "System dependencies installed"
 }
 
 create_user_and_directories() {
     log_info "Creating user and directories..."
-    
-    # Create service user if it doesn't exist
+
     if ! id "$SERVICE_USER" &>/dev/null; then
         useradd -r -s /bin/false -d "$INSTALL_DIR" "$SERVICE_USER"
         log_success "Created service user: $SERVICE_USER"
     else
         log_info "Service user $SERVICE_USER already exists"
     fi
-    
-    # Create directories
-    mkdir -p "$INSTALL_DIR"
-    mkdir -p "$CONFIG_DIR"
-    mkdir -p "$LOG_DIR"
-    mkdir -p "$RUN_DIR"
-    mkdir -p "/tmp/depthai-frames"
-    
-    # Set permissions
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$LOG_DIR"
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$RUN_DIR"
-    chown -R "$SERVICE_USER:$SERVICE_USER" "/tmp/depthai-frames"
-    
-    # Add user to required groups
+
+    mkdir -p "$INSTALL_DIR" "$CONFIG_DIR" "$LOG_DIR" "$RUN_DIR" "/tmp/depthai-frames"
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR" "$LOG_DIR" "$RUN_DIR" "/tmp/depthai-frames"
     usermod -a -G plugdev,video,dialout "$SERVICE_USER"
-    
+
     log_success "User and directories created"
 }
 
 setup_virtual_environment() {
     log_info "Setting up Python virtual environment..."
-    
+
     cd "$INSTALL_DIR"
-    
-    # Create virtual environment as service user
     sudo -u "$SERVICE_USER" python3 -m venv venv
-    
-    # Activate and install dependencies
+
     sudo -u "$SERVICE_USER" bash -c "
         source venv/bin/activate
         pip install -U pip setuptools wheel
         pip install --extra-index-url https://artifacts.luxonis.com/artifactory/luxonis-python-snapshot-local/ depthai
         pip install opencv-python numpy
     "
-    
+
     log_success "Virtual environment setup complete"
 }
 
 install_daemon_files() {
     log_info "Installing daemon files..."
-    
-    # Copy daemon script (assumes it's in the same directory as this script)
-    if [[ -f "depthai_daemon.py" ]]; then
-        cp "depthai_daemon.py" "$INSTALL_DIR/"
+
+    if [[ -f "$SCRIPT_DIR/depthai_daemon.py" ]]; then
+        cp "$SCRIPT_DIR/depthai_daemon.py" "$INSTALL_DIR/"
         chmod +x "$INSTALL_DIR/depthai_daemon.py"
         chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/depthai_daemon.py"
         log_success "Daemon script installed"
     else
-        log_error "depthai_daemon.py not found in current directory"
+        log_error "depthai_daemon.py not found in script directory: $SCRIPT_DIR"
         exit 1
     fi
-    
-    # Generate default configuration
+
     sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/depthai_daemon.py" --generate-config --config "$CONFIG_DIR/config.json"
-    
     log_success "Daemon files installed"
 }
 
 setup_udev_rules() {
     log_info "Setting up udev rules for DepthAI devices..."
-    
     cat > /etc/udev/rules.d/80-depthai.rules << 'EOF'
-# DepthAI USB rules
 SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666", GROUP="plugdev"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", ATTRS{idProduct}=="2485", MODE="0666", GROUP="plugdev"
 SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", ATTRS{idProduct}=="f63b", MODE="0666", GROUP="plugdev"
 EOF
-    
-    # Reload udev rules
+
     udevadm control --reload-rules
     udevadm trigger
-    
+
     log_success "Udev rules configured"
 }
 
 install_systemd_service() {
     log_info "Installing systemd service..."
-    
-    # Copy service file (assumes it's in the same directory as this script)
-    if [[ -f "depthai-daemon.service" ]]; then
-        cp "depthai-daemon.service" "/etc/systemd/system/"
-    else
-        # Create service file inline
-        cat > /etc/systemd/system/depthai-daemon.service << EOF
+
+    cat > /etc/systemd/system/depthai-daemon.service << EOF
 [Unit]
 Description=DepthAI Camera Daemon Service
 Documentation=https://docs.luxonis.com/
@@ -193,99 +163,79 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
-
 Environment=PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/depthai_daemon.py --config $CONFIG_DIR/config.json
-
 Restart=always
 RestartSec=10
 StartLimitInterval=300
 StartLimitBurst=5
-
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
-
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=depthai-daemon
-
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=$LOG_DIR $RUN_DIR /tmp/depthai-frames $CONFIG_DIR
-
 SupplementaryGroups=plugdev video dialout
-
 MemoryLimit=2G
 CPUQuota=80%
-
 Environment=DEPTHAI_LEVEL=info
 Environment=OPENCV_LOG_LEVEL=ERROR
 
 [Install]
 WantedBy=multi-user.target
 EOF
-    fi
-    
-    # Reload systemd
+
     systemctl daemon-reload
-    
     log_success "Systemd service installed"
 }
 
 enable_and_start_service() {
     log_info "Enabling and starting service..."
-    
-    # Enable service to start on boot
+
     systemctl enable depthai-daemon.service
-    
-    # Start the service
+
     if systemctl start depthai-daemon.service; then
         log_success "Service started successfully"
     else
         log_error "Failed to start service"
-        return 1
     fi
-    
-    # Wait a moment and check status
+
     sleep 2
     if systemctl is-active --quiet depthai-daemon.service; then
         log_success "Service is running"
     else
-        log_warning "Service may not be running properly. Check status with: systemctl status depthai-daemon"
+        log_warning "Service may not be running properly. Check with: systemctl status depthai-daemon"
     fi
 }
 
 create_management_scripts() {
     log_info "Creating management scripts..."
-    
-    # Create status script
+
     cat > /usr/local/bin/depthai-status << 'EOF'
 #!/bin/bash
 echo "=== DepthAI Daemon Status ==="
 systemctl status depthai-daemon.service
-
 echo -e "\n=== Service Stats ==="
 if [[ -f /var/run/depthai-daemon/status.json ]]; then
     cat /var/run/depthai-daemon/status.json | python3 -m json.tool
 else
     echo "Status file not found"
 fi
-
 echo -e "\n=== Recent Logs ==="
 journalctl -u depthai-daemon.service --no-pager -n 10
 EOF
 
-    # Create configuration editor script
     cat > /usr/local/bin/depthai-config << 'EOF'
 #!/bin/bash
 CONFIG_FILE="/etc/depthai-daemon/config.json"
-
 if [[ "$1" == "edit" ]]; then
     nano "$CONFIG_FILE"
-    echo "Configuration updated. Restart service with: sudo systemctl restart depthai-daemon"
+    echo "Configuration updated. Restart with: sudo systemctl restart depthai-daemon"
 elif [[ "$1" == "show" ]]; then
     cat "$CONFIG_FILE" | python3 -m json.tool
 elif [[ "$1" == "reload" ]]; then
@@ -293,13 +243,9 @@ elif [[ "$1" == "reload" ]]; then
     echo "Configuration reloaded"
 else
     echo "Usage: depthai-config {edit|show|reload}"
-    echo "  edit   - Edit configuration file"
-    echo "  show   - Display current configuration"
-    echo "  reload - Reload configuration without restarting service"
 fi
 EOF
 
-    # Create log viewer script
     cat > /usr/local/bin/depthai-logs << 'EOF'
 #!/bin/bash
 if [[ "$1" == "follow" || "$1" == "-f" ]]; then
@@ -311,17 +257,12 @@ else
 fi
 EOF
 
-    # Make scripts executable
-    chmod +x /usr/local/bin/depthai-status
-    chmod +x /usr/local/bin/depthai-config
-    chmod +x /usr/local/bin/depthai-logs
-    
+    chmod +x /usr/local/bin/depthai-status /usr/local/bin/depthai-config /usr/local/bin/depthai-logs
     log_success "Management scripts created"
 }
 
 create_logrotate_config() {
     log_info "Setting up log rotation..."
-    
     cat > /etc/logrotate.d/depthai-daemon << 'EOF'
 /var/log/depthai-daemon/*.log {
     weekly
@@ -336,7 +277,6 @@ create_logrotate_config() {
     endscript
 }
 EOF
-    
     log_success "Log rotation configured"
 }
 
@@ -344,60 +284,31 @@ show_usage_info() {
     log_success "Installation completed successfully!"
     echo
     echo "=== DepthAI Daemon Management Commands ==="
-    echo "  Service control:"
-    echo "    sudo systemctl start depthai-daemon     # Start service"
-    echo "    sudo systemctl stop depthai-daemon      # Stop service"
-    echo "    sudo systemctl restart depthai-daemon   # Restart service"
-    echo "    sudo systemctl status depthai-daemon    # Check status"
+    echo "  sudo systemctl start depthai-daemon"
+    echo "  sudo systemctl stop depthai-daemon"
+    echo "  sudo systemctl restart depthai-daemon"
+    echo "  sudo systemctl status depthai-daemon"
     echo
-    echo "  Quick commands:"
-    echo "    depthai-status          # Show detailed status"
-    echo "    depthai-logs            # Show recent logs"
-    echo "    depthai-logs follow     # Follow logs in real-time"
-    echo "    depthai-config show     # Display configuration"
-    echo "    depthai-config edit     # Edit configuration"
-    echo "    depthai-config reload   # Reload config without restart"
-    echo
-    echo "=== Configuration ==="
-    echo "  Config file: /etc/depthai-daemon/config.json"
-    echo "  Logs: /var/log/depthai-daemon/"
-    echo "  Status: /var/run/depthai-daemon/status.json"
-    echo
-    echo "=== Getting Started ==="
-    echo "1. Edit configuration: depthai-config edit"
-    echo "2. Check status: depthai-status"
-    echo "3. View logs: depthai-logs follow"
-    echo
+    echo "  depthai-status         # Show status"
+    echo "  depthai-logs           # Show logs"
+    echo "  depthai-config edit    # Edit config"
 }
 
 uninstall_service() {
     log_info "Uninstalling DepthAI Daemon..."
-    
-    # Stop and disable service
-    systemctl stop depthai-daemon.service 2>/dev/null || true
-    systemctl disable depthai-daemon.service 2>/dev/null || true
-    
-    # Remove files
+    systemctl stop depthai-daemon.service || true
+    systemctl disable depthai-daemon.service || true
     rm -f /etc/systemd/system/depthai-daemon.service
     rm -f /etc/udev/rules.d/80-depthai.rules
     rm -f /usr/local/bin/depthai-*
     rm -f /etc/logrotate.d/depthai-daemon
-    rm -rf "$INSTALL_DIR"
-    rm -rf "$CONFIG_DIR"
-    rm -rf "$LOG_DIR"
-    rm -rf "$RUN_DIR"
-    
-    # Remove user
-    userdel "$SERVICE_USER" 2>/dev/null || true
-    
-    # Reload systemd
+    rm -rf "$INSTALL_DIR" "$CONFIG_DIR" "$LOG_DIR" "$RUN_DIR"
+    userdel "$SERVICE_USER" || true
     systemctl daemon-reload
     udevadm control --reload-rules
-    
     log_success "DepthAI Daemon uninstalled"
 }
 
-# Main installation function
 main() {
     case "${1:-install}" in
         install)
@@ -421,12 +332,9 @@ main() {
             ;;
         *)
             echo "Usage: $0 {install|uninstall}"
-            echo "  install   - Install DepthAI Daemon service"
-            echo "  uninstall - Remove DepthAI Daemon service"
             exit 1
             ;;
     esac
 }
 
-# Run main function
 main "$@"
