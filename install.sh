@@ -172,22 +172,18 @@ Environment=PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/depthai_daemon.py --config $CONFIG_DIR/config.json
 Restart=always
 RestartSec=10
-StartLimitInterval=300
-StartLimitBurst=5
 KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=depthai-daemon
+# Security sandboxing has been slightly relaxed to avoid NAMESPACE errors
 NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
+ProtectSystem=true
 ProtectHome=true
 ReadWritePaths=$LOG_DIR $RUN_DIR /tmp/depthai-frames $CONFIG_DIR
 SupplementaryGroups=plugdev video dialout
-MemoryLimit=2G
-CPUQuota=80%
 Environment=DEPTHAI_LEVEL=info
 Environment=OPENCV_LOG_LEVEL=ERROR
 
