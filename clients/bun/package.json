@@ -1,0 +1,56 @@
+{
+  "name": "depthai-daemon-client",
+  "version": "1.0.0",
+  "description": "Full-featured DepthAI Daemon Client for Bun.js with plotting, streaming, and analysis",
+  "main": "depthai-client.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run depthai-client.ts",
+    "status": "bun run depthai-client.ts status",
+    "monitor": "bun run depthai-client.ts monitor",
+    "config": "bun run depthai-client.ts config",
+    "imu": "bun run depthai-client.ts imu",
+    "imu-analysis": "bun run depthai-client.ts imu-analysis 100",
+    "health": "bun run depthai-client.ts health",
+    "export": "bun run depthai-client.ts export",
+    "plot": "bun run depthai-client.ts plot-imu 100",
+    "dashboard": "bun run depthai-client.ts dashboard",
+    "report": "bun run depthai-client.ts report",
+    "stream-rgb": "bun run depthai-client.ts stream rgb",
+    "stream-depth": "bun run depthai-client.ts stream depth",
+    "install-global": "bun link",
+    "dev": "bun --watch depthai-client.ts"
+  },
+  "bin": {
+    "depthai-client": "./depthai-client.ts"
+  },
+  "keywords": [
+    "depthai",
+    "luxonis",
+    "computer-vision",
+    "camera",
+    "imu",
+    "depth-camera",
+    "raspberry-pi",
+    "data-visualization",
+    "real-time-monitoring",
+    "sensor-fusion"
+  ],
+  "author": "DepthAI Community",
+  "license": "MIT",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "os": [
+    "linux",
+    "darwin"
+  ],
+  "files": [
+    "depthai-client.ts",
+    "README.md"
+  ]
+}
+
