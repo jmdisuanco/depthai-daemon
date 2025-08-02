@@ -21,7 +21,7 @@ The library is built with a modular architecture that separates concerns:
 
 ```bash
 # Clone or download the library files
-git clone <repository-url>
+git clone http://www.github.com/jmdisuanco/depthai-daemon
 cd depthai-client-library
 
 # Install dependencies
@@ -61,30 +61,30 @@ const client = new DepthAIClient(options?);
 
 ```typescript
 interface ConstructorOptions {
-  statusPath?: string;    // Default: '/var/run/depthai-daemon/status.json'
-  configPath?: string;    // Default: '/etc/depthai-daemon/config.json'
-  outputDir?: string;     // Default: '/tmp/depthai-frames'
-  logPath?: string;       // Default: '/var/log/depthai-daemon/daemon.log'
+  statusPath?: string; // Default: '/var/run/depthai-daemon/status.json'
+  configPath?: string; // Default: '/etc/depthai-daemon/config.json'
+  outputDir?: string; // Default: '/tmp/depthai-frames'
+  logPath?: string; // Default: '/var/log/depthai-daemon/daemon.log'
 }
 ```
 
 #### Core Methods
 
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `getStatus()` | Get current daemon status | `Promise<DepthAIStatus \| null>` |
-| `getConfig()` | Get daemon configuration | `Promise<DepthAIConfig \| null>` |
-| `updateConfig(config)` | Update configuration | `Promise<boolean>` |
-| `getLatestFrames(count?, type?)` | Get recent frame paths | `Promise<string[]>` |
-| `getLatestIMUData(count?)` | Get recent IMU data | `Promise<IMUData[]>` |
-| `analyzeIMUData(samples?)` | Analyze IMU statistics | `Promise<IMUAnalysis \| null>` |
-| `streamFrames(type?, interval?)` | Stream frames in real-time | `AsyncGenerator<FrameInfo \| null>` |
-| `monitorStatus(interval?)` | Monitor status in real-time | `AsyncGenerator<DepthAIStatus \| null>` |
-| `getLogs(lines?)` | Get recent log entries | `Promise<string[]>` |
-| `isHealthy()` | Check daemon health | `Promise<boolean>` |
-| `exportData()` | Export comprehensive data | `Promise<ExportData>` |
-| `saveExportData(path)` | Save export to file | `Promise<boolean>` |
-| `displayFrame(path)` | Display frame info | `Promise<FrameInfo \| null>` |
+| Method                           | Description                 | Returns                                 |
+| -------------------------------- | --------------------------- | --------------------------------------- |
+| `getStatus()`                    | Get current daemon status   | `Promise<DepthAIStatus \| null>`        |
+| `getConfig()`                    | Get daemon configuration    | `Promise<DepthAIConfig \| null>`        |
+| `updateConfig(config)`           | Update configuration        | `Promise<boolean>`                      |
+| `getLatestFrames(count?, type?)` | Get recent frame paths      | `Promise<string[]>`                     |
+| `getLatestIMUData(count?)`       | Get recent IMU data         | `Promise<IMUData[]>`                    |
+| `analyzeIMUData(samples?)`       | Analyze IMU statistics      | `Promise<IMUAnalysis \| null>`          |
+| `streamFrames(type?, interval?)` | Stream frames in real-time  | `AsyncGenerator<FrameInfo \| null>`     |
+| `monitorStatus(interval?)`       | Monitor status in real-time | `AsyncGenerator<DepthAIStatus \| null>` |
+| `getLogs(lines?)`                | Get recent log entries      | `Promise<string[]>`                     |
+| `isHealthy()`                    | Check daemon health         | `Promise<boolean>`                      |
+| `exportData()`                   | Export comprehensive data   | `Promise<ExportData>`                   |
+| `saveExportData(path)`           | Save export to file         | `Promise<boolean>`                      |
+| `displayFrame(path)`             | Display frame info          | `Promise<FrameInfo \| null>`            |
 
 ### Type Definitions
 
@@ -159,7 +159,7 @@ DepthAIUtils.validateStatus(data: any): data is DepthAIStatus
 ### Template Generator
 
 ```typescript
-import HTMLTemplates from './templates.js';
+import HTMLTemplates from "./templates.js";
 
 // Generate IMU analysis plot
 const analysis = await client.analyzeIMUData(100);
@@ -179,12 +179,12 @@ const statusHTML = HTMLTemplates.generateStatusPage(status);
 
 ### Available Templates
 
-| Template | Purpose | Features |
-|----------|---------|----------|
-| `generateIMUPlot()` | IMU data visualization | Interactive Plotly charts, statistics |
-| `generateLiveDashboard()` | Real-time monitoring | Auto-refresh, live plots |
-| `generateSystemReport()` | Comprehensive report | Status, config, logs, analysis |
-| `generateStatusPage()` | Simple status display | Auto-refresh every 5 seconds |
+| Template                  | Purpose                | Features                              |
+| ------------------------- | ---------------------- | ------------------------------------- |
+| `generateIMUPlot()`       | IMU data visualization | Interactive Plotly charts, statistics |
+| `generateLiveDashboard()` | Real-time monitoring   | Auto-refresh, live plots              |
+| `generateSystemReport()`  | Comprehensive report   | Status, config, logs, analysis        |
+| `generateStatusPage()`    | Simple status display  | Auto-refresh every 5 seconds          |
 
 ## 🖥️ CLI Commands
 
@@ -232,7 +232,7 @@ bun cli.ts display frame.jpg   # Display frame info
 ### Example 1: Basic Status Monitoring
 
 ```typescript
-import DepthAIClient, { DepthAIUtils } from './client.js';
+import DepthAIClient, { DepthAIUtils } from "./client.js";
 
 const client = new DepthAIClient();
 
@@ -240,7 +240,9 @@ const client = new DepthAIClient();
 const status = await client.getStatus();
 if (status) {
   console.log(`FPS: ${status.stats.current_fps.toFixed(1)}`);
-  console.log(`Uptime: ${DepthAIUtils.formatUptime(status.stats.uptime_seconds)}`);
+  console.log(
+    `Uptime: ${DepthAIUtils.formatUptime(status.stats.uptime_seconds)}`
+  );
   console.log(`Health: ${status.health.status}`);
 }
 ```
@@ -251,12 +253,12 @@ if (status) {
 // Monitor with custom logic
 for await (const status of client.monitorStatus(1000)) {
   if (!status) continue;
-  
+
   // Alert on high temperature
   if (status.stats.current_temperature_c > 70) {
-    console.log('🚨 High temperature alert!');
+    console.log("🚨 High temperature alert!");
   }
-  
+
   // Log every 10th update
   if (status.stats.total_frames % 300 === 0) {
     console.log(`Milestone: ${status.stats.total_frames} frames processed`);
@@ -276,12 +278,12 @@ if (analysis) {
     analysis.accelerometer.y_mean,
     analysis.accelerometer.z_mean
   );
-  
+
   // Determine motion state
   if (accMagnitude < 0.1) {
-    console.log('📍 Device is stationary');
+    console.log("📍 Device is stationary");
   } else if (accMagnitude > 5) {
-    console.log('🏃 High motion detected');
+    console.log("🏃 High motion detected");
   }
 }
 ```
@@ -290,14 +292,14 @@ if (analysis) {
 
 ```typescript
 // Monitor new frames
-for await (const frameInfo of client.streamFrames('rgb', 500)) {
+for await (const frameInfo of client.streamFrames("rgb", 500)) {
   if (frameInfo) {
     console.log(`New frame: ${frameInfo.fileName}`);
     console.log(`Size: ${DepthAIUtils.formatBytes(frameInfo.size)}`);
-    
+
     // Process large frames differently
     if (frameInfo.size > 1024 * 1024) {
-      console.log('📸 Large frame detected - may need processing');
+      console.log("📸 Large frame detected - may need processing");
     }
   }
 }
@@ -306,8 +308,8 @@ for await (const frameInfo of client.streamFrames('rgb', 500)) {
 ### Example 5: Custom Dashboard
 
 ```typescript
-import HTMLTemplates from './templates.js';
-import { writeFile } from 'fs/promises';
+import HTMLTemplates from "./templates.js";
+import { writeFile } from "fs/promises";
 
 // Create custom dashboard
 const exportData = await client.exportData();
@@ -315,13 +317,13 @@ const baseHTML = HTMLTemplates.generateSystemReport(exportData);
 
 // Customize with additional features
 const customHTML = baseHTML.replace(
-  '<body>',
+  "<body>",
   `<body>
     <div class="custom-header">My Organization - DepthAI Monitor</div>`
 );
 
-await writeFile('custom-dashboard.html', customHTML);
-console.log('📊 Custom dashboard created');
+await writeFile("custom-dashboard.html", customHTML);
+console.log("📊 Custom dashboard created");
 ```
 
 ### Example 6: Configuration Management
@@ -334,13 +336,13 @@ console.log(`Current FPS: ${config?.camera.rgb_fps}`);
 // Update settings for better performance
 await client.updateConfig({
   camera: {
-    rgb_fps: 20,      // Lower FPS
-    imu_frequency: 50 // Lower IMU rate
-  }
+    rgb_fps: 20, // Lower FPS
+    imu_frequency: 50, // Lower IMU rate
+  },
 });
 
-console.log('⚙️ Configuration optimized for performance');
-console.log('💡 Reload daemon: sudo systemctl kill -s HUP depthai-daemon');
+console.log("⚙️ Configuration optimized for performance");
+console.log("💡 Reload daemon: sudo systemctl kill -s HUP depthai-daemon");
 ```
 
 ### Example 7: Health Monitoring System
@@ -350,28 +352,31 @@ console.log('💡 Reload daemon: sudo systemctl kill -s HUP depthai-daemon');
 async function healthCheck() {
   const isHealthy = await client.isHealthy();
   const status = await client.getStatus();
-  
+
   if (!status) {
-    console.log('❌ Daemon unavailable');
+    console.log("❌ Daemon unavailable");
     return;
   }
-  
+
   // Calculate health score
   const checks = {
-    serviceRunning: status.status === 'running',
+    serviceRunning: status.status === "running",
     goodFPS: status.stats.current_fps > 15,
-    normalTemp: !status.stats.current_temperature_c || status.stats.current_temperature_c < 70,
-    lowErrors: status.stats.error_count / Math.max(status.stats.total_frames, 1) < 0.01
+    normalTemp:
+      !status.stats.current_temperature_c ||
+      status.stats.current_temperature_c < 70,
+    lowErrors:
+      status.stats.error_count / Math.max(status.stats.total_frames, 1) < 0.01,
   };
-  
+
   const passed = Object.values(checks).filter(Boolean).length;
   const score = (passed / Object.keys(checks).length) * 100;
-  
+
   console.log(`Health Score: ${score.toFixed(0)}%`);
-  
+
   // Detailed breakdown
   Object.entries(checks).forEach(([check, result]) => {
-    console.log(`${result ? '✅' : '❌'} ${check}`);
+    console.log(`${result ? "✅" : "❌"} ${check}`);
   });
 }
 
@@ -386,10 +391,10 @@ setInterval(healthCheck, 60000);
 ```typescript
 // Custom paths for testing or different setups
 const testClient = new DepthAIClient({
-  statusPath: '/tmp/test-status.json',
-  configPath: '/tmp/test-config.json',
-  outputDir: '/tmp/test-frames',
-  logPath: '/tmp/test.log'
+  statusPath: "/tmp/test-status.json",
+  configPath: "/tmp/test-config.json",
+  outputDir: "/tmp/test-frames",
+  logPath: "/tmp/test.log",
 });
 ```
 
@@ -399,12 +404,12 @@ const testClient = new DepthAIClient({
 try {
   const status = await client.getStatus();
   if (!status) {
-    console.log('Service not available');
+    console.log("Service not available");
     return;
   }
   // Process status...
 } catch (error) {
-  console.error('Failed to get status:', error);
+  console.error("Failed to get status:", error);
   // Fallback behavior...
 }
 ```
@@ -418,7 +423,7 @@ for await (const status of client.monitorStatus(5000)) {
 }
 
 // Limit frame streaming rate
-for await (const frame of client.streamFrames('rgb', 1000)) {
+for await (const frame of client.streamFrames("rgb", 1000)) {
   // Check for new frames every second instead of 100ms
 }
 ```
@@ -429,7 +434,7 @@ for await (const frame of client.streamFrames('rgb', 1000)) {
 
 ```typescript
 // Express.js API endpoint
-app.get('/api/depthai/status', async (req, res) => {
+app.get("/api/depthai/status", async (req, res) => {
   const client = new DepthAIClient();
   const status = await client.getStatus();
   res.json(status);
@@ -438,7 +443,7 @@ app.get('/api/depthai/status', async (req, res) => {
 // WebSocket real-time updates
 const clients = new Set();
 for await (const status of client.monitorStatus(2000)) {
-  clients.forEach(ws => ws.send(JSON.stringify(status)));
+  clients.forEach((ws) => ws.send(JSON.stringify(status)));
 }
 ```
 
@@ -446,41 +451,41 @@ for await (const status of client.monitorStatus(2000)) {
 
 ```typescript
 // Main process
-import DepthAIClient from './client.js';
+import DepthAIClient from "./client.js";
 
 const client = new DepthAIClient();
 
-ipcMain.handle('get-depthai-status', async () => {
+ipcMain.handle("get-depthai-status", async () => {
   return await client.getStatus();
 });
 
 // Renderer process
-const status = await ipcRenderer.invoke('get-depthai-status');
+const status = await ipcRenderer.invoke("get-depthai-status");
 ```
 
 ### React Component Integration
 
 ```typescript
-import { useEffect, useState } from 'react';
-import DepthAIClient from './client.js';
+import { useEffect, useState } from "react";
+import DepthAIClient from "./client.js";
 
 function DepthAIStatus() {
   const [status, setStatus] = useState(null);
   const [client] = useState(() => new DepthAIClient());
-  
+
   useEffect(() => {
     const updateStatus = async () => {
       const newStatus = await client.getStatus();
       setStatus(newStatus);
     };
-    
+
     updateStatus();
     const interval = setInterval(updateStatus, 2000);
     return () => clearInterval(interval);
   }, [client]);
-  
+
   if (!status) return <div>Loading...</div>;
-  
+
   return (
     <div>
       <h2>DepthAI Status</h2>
@@ -496,25 +501,25 @@ function DepthAIStatus() {
 ### Unit Testing
 
 ```typescript
-import { describe, it, expect } from 'bun:test';
-import DepthAIClient, { DepthAIUtils } from './client.js';
+import { describe, it, expect } from "bun:test";
+import DepthAIClient, { DepthAIUtils } from "./client.js";
 
-describe('DepthAI Utils', () => {
-  it('should format uptime correctly', () => {
-    expect(DepthAIUtils.formatUptime(3665)).toBe('1h 1m 5s');
+describe("DepthAI Utils", () => {
+  it("should format uptime correctly", () => {
+    expect(DepthAIUtils.formatUptime(3665)).toBe("1h 1m 5s");
   });
-  
-  it('should calculate magnitude correctly', () => {
+
+  it("should calculate magnitude correctly", () => {
     expect(DepthAIUtils.calculateMagnitude(3, 4, 0)).toBe(5);
   });
 });
 
-describe('DepthAI Client', () => {
-  it('should handle missing status file gracefully', async () => {
+describe("DepthAI Client", () => {
+  it("should handle missing status file gracefully", async () => {
     const client = new DepthAIClient({
-      statusPath: '/nonexistent/status.json'
+      statusPath: "/nonexistent/status.json",
     });
-    
+
     const status = await client.getStatus();
     expect(status).toBeNull();
   });
@@ -579,21 +584,25 @@ WantedBy=multi-user.target
 ## 🎯 Best Practices
 
 ### 1. Error Handling
+
 - Always check for null returns from client methods
 - Use try-catch for operations that might fail
 - Implement fallback behavior for degraded service
 
 ### 2. Performance
+
 - Use appropriate intervals for real-time monitoring
 - Limit the amount of historical data requested
 - Cache frequently accessed data when possible
 
 ### 3. Resource Management
+
 - Close monitoring loops when done
 - Use reasonable sample sizes for analysis
 - Clean up generated files periodically
 
 ### 4. Security
+
 - Validate configuration changes before applying
 - Use appropriate file permissions for output
 - Sanitize user inputs in custom applications
@@ -601,11 +610,13 @@ WantedBy=multi-user.target
 ## 🔗 Ecosystem
 
 ### Related Projects
+
 - **DepthAI Daemon** - The core service this client connects to
 - **DepthAI Python Library** - Alternative Python implementation
 - **Luxonis Hub** - Cloud platform for DepthAI devices
 
 ### Extension Points
+
 - Custom template generators for specific visualizations
 - Plugin system for additional data sources
 - Integration with monitoring platforms (Grafana, Prometheus)
@@ -615,6 +626,7 @@ WantedBy=multi-user.target
 ### Common Issues
 
 **Client can't connect to daemon:**
+
 ```bash
 # Check if daemon is running
 sudo systemctl status depthai-daemon
@@ -624,18 +636,21 @@ ls -la /var/run/depthai-daemon/
 ```
 
 **No IMU data available:**
+
 ```bash
 # Check if your OAK-D Lite model has IMU
 bun cli.ts status  # Look for IMU samples count
 ```
 
 **Frame directory not found:**
+
 ```bash
 # Enable frame saving in daemon config
 bun cli.ts config  # Check output.save_frames setting
 ```
 
 **Permission denied errors:**
+
 ```bash
 # Add user to required groups
 sudo usermod -a -G pi,plugdev $USER
@@ -648,18 +663,18 @@ sudo usermod -a -G pi,plugdev $USER
 const client = new DepthAIClient();
 
 // Check what files exist
-console.log('Status file exists:', await exists(client.statusPath));
-console.log('Config file exists:', await exists(client.configPath));
+console.log("Status file exists:", await exists(client.statusPath));
+console.log("Config file exists:", await exists(client.configPath));
 ```
 
 ## 📈 Performance Benchmarks
 
-| Operation | Time (avg) | Memory |
-|-----------|------------|--------|
-| `getStatus()` | ~5ms | ~1MB |
-| `analyzeIMUData(100)` | ~15ms | ~2MB |
-| `exportData()` | ~50ms | ~5MB |
-| `generateReport()` | ~100ms | ~3MB |
+| Operation             | Time (avg) | Memory |
+| --------------------- | ---------- | ------ |
+| `getStatus()`         | ~5ms       | ~1MB   |
+| `analyzeIMUData(100)` | ~15ms      | ~2MB   |
+| `exportData()`        | ~50ms      | ~5MB   |
+| `generateReport()`    | ~100ms     | ~3MB   |
 
 ## 🤝 Contributing
 
@@ -670,6 +685,7 @@ console.log('Config file exists:', await exists(client.configPath));
 5. **Submit pull request**
 
 ### Code Style
+
 - Use TypeScript for type safety
 - Follow existing naming conventions
 - Add JSDoc comments for public methods
