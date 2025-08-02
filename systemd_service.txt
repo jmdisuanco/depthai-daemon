@@ -1,0 +1,52 @@
+[Unit]
+Description=DepthAI Camera Daemon Service
+Documentation=https://docs.luxonis.com/
+After=network.target multi-user.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/depthai-daemon
+
+# Virtual environment and executable
+Environment=PATH=/opt/depthai-daemon/venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/depthai-daemon/venv/bin/python /opt/depthai-daemon/depthai_daemon.py --config /etc/depthai-daemon/config.json
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Process management
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Output and logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=depthai-daemon
+
+# Security and permissions
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/depthai-daemon /var/run/depthai-daemon /tmp/depthai-frames /etc/depthai-daemon
+
+# USB and hardware access
+SupplementaryGroups=plugdev video dialout
+
+# Resource limits
+MemoryLimit=2G
+CPUQuota=80%
+
+# Environment variables
+Environment=DEPTHAI_LEVEL=info
+Environment=OPENCV_LOG_LEVEL=ERROR
+
+[Install]
+WantedBy=multi-user.target

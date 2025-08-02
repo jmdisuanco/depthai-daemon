@@ -1,0 +1,34 @@
+{
+  "camera": {
+    "rgb_resolution": [1920, 1080],
+    "rgb_fps": 30,
+    "mono_resolution": [640, 400],
+    "mono_fps": 30,
+    "depth_enabled": true,
+    "preview_size": [640, 480],
+    "imu_enabled": true,
+    "imu_frequency": 100
+  },
+  "ai": {
+    "model_enabled": false,
+    "model_path": "/opt/depthai-daemon/models/mobilenet-ssd.blob",
+    "model_name": "mobilenet-ssd",
+    "confidence_threshold": 0.5
+  },
+  "output": {
+    "save_frames": false,
+    "output_directory": "/tmp/depthai-frames",
+    "max_files": 1000,
+    "stream_enabled": false,
+    "stream_port": 8080,
+    "rtsp_enabled": false,
+    "rtsp_port": 8554
+  },
+  "service": {
+    "health_check_interval": 30,
+    "max_reconnect_attempts": 5,
+    "reconnect_delay": 10,
+    "log_level": "INFO",
+    "stats_interval": 60
+  }
+}
