@@ -129,9 +129,14 @@ install_daemon_files() {
         log_error "depthai_daemon.py not found in script directory: $SCRIPT_DIR"
         exit 1
     fi
-
-    sudo -u "$SERVICE_USER" "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/depthai_daemon.py" --generate-config --config "$CONFIG_DIR/config.json"
-    log_success "Daemon files installed"
+    
+    # Generate the default config as root to avoid permission issues
+    log_info "Generating default configuration as root..."
+    "$INSTALL_DIR/venv/bin/python" "$INSTALL_DIR/depthai_daemon.py" --generate-config --config "$CONFIG_DIR/config.json"
+    
+    # Change ownership of the config file to the service user
+    chown "$SERVICE_USER:$SERVICE_USER" "$CONFIG_DIR/config.json"
+    log_success "Default configuration created and permissions set."
 }
 
 setup_udev_rules() {
