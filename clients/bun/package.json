@@ -1,29 +1,44 @@
 {
-  "name": "depthai-daemon-client",
+  "name": "depthai-client-library",
   "version": "1.0.0",
-  "description": "Full-featured DepthAI Daemon Client for Bun.js with plotting, streaming, and analysis",
-  "main": "depthai-client.ts",
+  "description": "Modular DepthAI daemon client library with separated concerns",
   "type": "module",
+  "main": "client.js",
+  "exports": {
+    ".": "./client.js",
+    "./client": "./client.js",
+    "./templates": "./templates.js",
+    "./cli": "./cli.js"
+  },
   "scripts": {
-    "start": "bun run depthai-client.ts",
-    "status": "bun run depthai-client.ts status",
-    "monitor": "bun run depthai-client.ts monitor",
-    "config": "bun run depthai-client.ts config",
-    "imu": "bun run depthai-client.ts imu",
-    "imu-analysis": "bun run depthai-client.ts imu-analysis 100",
-    "health": "bun run depthai-client.ts health",
-    "export": "bun run depthai-client.ts export",
-    "plot": "bun run depthai-client.ts plot-imu 100",
-    "dashboard": "bun run depthai-client.ts dashboard",
-    "report": "bun run depthai-client.ts report",
-    "stream-rgb": "bun run depthai-client.ts stream rgb",
-    "stream-depth": "bun run depthai-client.ts stream depth",
-    "install-global": "bun link",
-    "dev": "bun --watch depthai-client.ts"
+    "build": "bun build --target=bun ./client.ts --outdir=./dist",
+    "dev": "bun --watch cli.ts",
+    "cli": "bun cli.ts",
+    "status": "bun cli.ts status",
+    "monitor": "bun cli.ts monitor",
+    "dashboard": "bun cli.ts dashboard",
+    "plot": "bun cli.ts plot-imu 100",
+    "report": "bun cli.ts report",
+    "health": "bun cli.ts health",
+    "stream": "bun cli.ts stream rgb",
+    "test": "bun test",
+    "format": "prettier --write *.ts",
+    "lint": "eslint *.ts"
   },
   "bin": {
-    "depthai-client": "./depthai-client.ts"
+    "depthai": "./cli.ts",
+    "depthai-client": "./cli.ts"
   },
+  "files": [
+    "client.ts",
+    "client.js",
+    "templates.ts",
+    "templates.js",
+    "cli.ts",
+    "cli.js",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "depthai",
     "luxonis",
@@ -34,23 +49,36 @@
     "raspberry-pi",
     "data-visualization",
     "real-time-monitoring",
-    "sensor-fusion"
+    "sensor-fusion",
+    "typescript",
+    "modular",
+    "client-library"
   ],
   "author": "DepthAI Community",
   "license": "MIT",
   "devDependencies": {
-    "bun-types": "latest"
+    "@types/bun": "^1.2.19",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "bun-types": "latest",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
   },
   "engines": {
-    "bun": ">=1.0.0"
+    "bun": ">=1.0.0",
+    "node": ">=18.0.0"
   },
   "os": [
     "linux",
     "darwin"
   ],
-  "files": [
-    "depthai-client.ts",
-    "README.md"
-  ]
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/depthai-client-library.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/depthai-client-library/issues"
+  },
+  "homepage": "https://github.com/your-org/depthai-client-library#readme"
 }
-
